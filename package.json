@@ -1,0 +1,8 @@
+{
+  "name": "mass-rename-request",
+  "version": "1.0.0",
+  "homepage": "https://commons.wikimedia.org/wiki/User:Deltaspace42/mass-rename-request",
+  "description": "Wikimedia Commons userscript to mass request renaming files",
+  "author": "Ruslan Gadeev",
+  "license": "MIT"
+}
