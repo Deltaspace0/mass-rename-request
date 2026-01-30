@@ -241,11 +241,16 @@ mw.loader.using(['mediawiki.api'], function () {
     function findAndReplace() {
         const originalPattern = $('#mass-rename-find').val();
         const targetPattern = $('#mass-rename-replace').val();
+        let replacedCount = 0;
         $('textarea.mass-rename-input').each(function() {
             const $input = $(this);
             const name = $input.val().replace(originalPattern, targetPattern);
+            if (name !== $input.val()) {
+                replacedCount++;
+            }
             $input.data('setName')(name);
         });
+        mw.notify(`Replaced ${replacedCount} names`);
     }
     
     function submitRequests() {
