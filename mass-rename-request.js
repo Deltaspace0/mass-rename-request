@@ -320,7 +320,7 @@ mw.loader.using(['mediawiki.api'], function () {
                     return;
                 }
                 const content = pages[pageId].revisions[0]['*'];
-                if (content.includes('{{rename')) {
+                if (content.includes('{{rename') || content.includes('{{Rename')) {
                     reject('Already has rename template');
                     return;
                 }
