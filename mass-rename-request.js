@@ -178,19 +178,27 @@ mw.loader.using(['mediawiki.api'], function () {
         $('<span>')
             .text('Find:')
             .appendTo($replaceRow);
-        $('<input>')
+        const $findInput = $('<input>')
             .attr('type', 'text')
             .attr('id', 'mass-rename-find')
             .css({'margin': '0 5px', 'padding': '3px', 'width': '100px'})
             .appendTo($replaceRow);
+        const savedFind = localStorage.getItem('mass-rename-saved-find');
+        if (savedFind) {
+            $findInput.val(savedFind);
+        }
         $('<span>')
             .text('Replace:')
             .appendTo($replaceRow);
-        $('<input>')
+        const $replaceInput = $('<input>')
             .attr('type', 'text')
             .attr('id', 'mass-rename-replace')
             .css({'margin': '0 5px', 'padding': '3px', 'width': '100px'})
             .appendTo($replaceRow);
+        const savedReplace = localStorage.getItem('mass-rename-saved-replace');
+        if (savedReplace) {
+            $replaceInput.val(savedReplace);
+        }
         $('<button>')
             .text('Replace')
             .css({
@@ -241,6 +249,8 @@ mw.loader.using(['mediawiki.api'], function () {
     function findAndReplace() {
         const originalPattern = $('#mass-rename-find').val();
         const targetPattern = $('#mass-rename-replace').val();
+        localStorage.setItem('mass-rename-saved-find', originalPattern);
+        localStorage.setItem('mass-rename-saved-replace', targetPattern);
         let replacedCount = 0;
         $('textarea.mass-rename-input').each(function() {
             const $input = $(this);
