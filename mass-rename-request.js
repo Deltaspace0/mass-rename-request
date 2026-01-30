@@ -156,22 +156,30 @@ mw.loader.using(['mediawiki.api'], function () {
                 .text('Template:File renaming reasons/i18n'))
             .append('): ')
             .appendTo($rationaleRow);
-        $('<input>')
+        const $rationaleInput = $('<input>')
             .attr('type', 'text')
             .attr('id', 'mass-rename-rationale')
             .css({'margin-left': '5px', 'padding': '3px', 'width': '50px'})
             .appendTo($rationaleRow);
+        const savedRationale = localStorage.getItem('mass-rename-saved-rationale');
+        if (savedRationale) {
+            $rationaleInput.val(savedRationale);
+        }
         const $reasonRow = $('<div>')
             .css({'margin-bottom': '10px'})
             .appendTo($controls);
         $('<span>')
             .text('Additional explanation / reason / justification:')
             .appendTo($reasonRow);
-        $('<input>')
+        const $reasonInput = $('<input>')
             .attr('type', 'text')
             .attr('id', 'mass-rename-reason')
             .css({'margin-left': '5px', 'padding': '3px', 'width': '250px'})
             .appendTo($reasonRow);
+        const savedReason = localStorage.getItem('mass-rename-saved-reason');
+        if (savedReason) {
+            $reasonInput.val(savedReason);
+        }
         const $replaceRow = $('<div>')
             .css({'margin-bottom': '10px'})
             .appendTo($controls);
@@ -270,6 +278,8 @@ mw.loader.using(['mediawiki.api'], function () {
             return;
         }
         const reason = $('#mass-rename-reason').val().trim();
+        localStorage.setItem('mass-rename-saved-rationale', rationale);
+        localStorage.setItem('mass-rename-saved-reason', reason);
         const changes = [];
         $('textarea.mass-rename-input').each(function() {
             const $input = $(this);
