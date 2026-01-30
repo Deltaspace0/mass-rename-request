@@ -9,7 +9,7 @@ mw.loader.using(['mediawiki.api'], function () {
     $(function () {
         const actionLink = mw.util.addPortletLink(
             'p-cactions',
-            '#',
+            '#mass-rename-controls',
             'Request renaming files',
             'ca-mass-rename-request',
             'Request renaming files in the current category.'
