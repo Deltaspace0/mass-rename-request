@@ -190,6 +190,12 @@ mw.loader.using(['mediawiki.api'], function () {
             .attr('type', 'text')
             .attr('id', 'mass-rename-find')
             .css({'margin': '0 5px', 'padding': '3px', 'width': '100px'})
+            .on('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    findAndReplace();
+                }
+            })
             .appendTo($replaceRow);
         const savedFind = localStorage.getItem('mass-rename-saved-find');
         if (savedFind) {
@@ -202,6 +208,12 @@ mw.loader.using(['mediawiki.api'], function () {
             .attr('type', 'text')
             .attr('id', 'mass-rename-replace')
             .css({'margin': '0 5px', 'padding': '3px', 'width': '100px'})
+            .on('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    findAndReplace();
+                }
+            })
             .appendTo($replaceRow);
         const savedReplace = localStorage.getItem('mass-rename-saved-replace');
         if (savedReplace) {
