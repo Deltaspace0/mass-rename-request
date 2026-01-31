@@ -232,6 +232,18 @@ mw.loader.using(['mediawiki.api'], function () {
             })
             .on('click', findAndReplace)
             .appendTo($replaceRow);
+        const $overwriteTemplateRow = $('<div>')
+            .css({'margin-bottom': '10px'})
+            .appendTo($controls);
+        $('<input>')
+            .attr('type', 'checkbox')
+            .attr('id', 'mass-rename-overwrite-template')
+            .appendTo($overwriteTemplateRow)
+        $('<label>')
+            .attr('for', 'mass-rename-overwrite-template')
+            .text(' Overwrite existing rename template')
+            .css({'margin-left': '5px', 'cursor': 'pointer'})
+            .appendTo($overwriteTemplateRow);
         const $buttonRow = $('<div>')
             .css({'margin-bottom': '10px'})
             .appendTo($controls);
@@ -313,6 +325,7 @@ mw.loader.using(['mediawiki.api'], function () {
         if (!confirm(`Submit ${changes.length} rename request(s)?`)) {
             return;
         }
+        const overwrite = $('#mass-rename-overwrite-template').prop('checked');
         const submitButton = $('#mass-rename-submit-btn');
         submitButton.prop('disabled', true);
         submitButton.text('Submitted 0 request(s)...');
@@ -320,7 +333,7 @@ mw.loader.using(['mediawiki.api'], function () {
         let completed = 0;
         changes.forEach((change, i) => {
             setTimeout(() => {
-                addRenameTemplate(change.original, change.new, change.rationale, change.reason)
+                addRenameTemplate(change.original, change.new, change.rationale, change.reason, overwrite)
                     .catch((err) => {
                         mw.notify(`Failed: ${change.original} - ${err}`, {type: 'error'});
                     })
@@ -336,7 +349,7 @@ mw.loader.using(['mediawiki.api'], function () {
         });
     }
     
-    function addRenameTemplate(fileName, newName, rationale, reason) {
+    function addRenameTemplate(fileName, newName, rationale, reason, overwrite) {
         return new Promise((resolve, reject) => {
             const api = new mw.Api();
             api.get({
@@ -347,21 +360,23 @@ mw.loader.using(['mediawiki.api'], function () {
             }).then((data) => {
                 const pageValues = Object.values(data.query.pages);
                 const targetPage = pageValues.find(p => p.title === `File:${newName}`);
-                if (targetPage && !targetPage.missing) {
+                if (targetPage.revisions) {
                     reject('Target filename already exists');
                     return;
                 }
                 const originalPage = pageValues.find(p => p.title === `File:${fileName}`);
-                if (!originalPage || originalPage.missing || !originalPage.revisions) {
+                if (!originalPage.revisions) {
                     reject('File not found');
                     return;
                 }
                 const content = originalPage.revisions[0]['*'];
-                if (content.includes('{{rename') || content.includes('{{Rename')) {
+                const templateExists = /\{\{rename/i.test(content);
+                if (templateExists && !overwrite) {
                     reject('Already has rename template');
                     return;
                 }
-                const newContent = `{{rename|1=${newName}|2=${rationale}|3=${reason}|user=${username}}}\n${content}`;
+                const cleanedContent = content.replace(/\{\{rename[^}]*\}\}/gi, '').trim();
+                const newContent = `{{rename|1=${newName}|2=${rationale}|3=${reason}|user=${username}}}\n${cleanedContent}`;
                 return api.postWithToken('csrf', {
                     action: 'edit',
                     title: `File:${fileName}`,
