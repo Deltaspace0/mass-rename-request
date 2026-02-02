@@ -5,6 +5,10 @@ mw.loader.using(['mediawiki.api'], function () {
     }
     const scriptAdvertisement = '([[User:Deltaspace42/mass-rename-request|assisted]])';
     const username = mw.config.get('wgUserName');
+    let pendingChanges = {};
+    let rationale = '';
+    let reason = '';
+    let overwriteTemplate = false;
     let isActive = false;
     $(function () {
         const actionLink = mw.util.addPortletLink(
@@ -79,6 +83,7 @@ mw.loader.using(['mediawiki.api'], function () {
             $container.append($resetBtn);
             
             function onOriginalName() {
+                delete pendingChanges[fileName];
                 $resetBtn.prop('disabled', true);
                 $container.css({
                     'background': originalBackground
@@ -102,7 +107,14 @@ mw.loader.using(['mediawiki.api'], function () {
                 if (cleanValue === fileName) {
                     onOriginalName();
                 } else {
+                    pendingChanges[fileName] = cleanValue;
                     onNewName();
+                }
+                const changeLength = Object.keys(pendingChanges).length;
+                if (changeLength === 0) {
+                    $('#mass-rename-submit-btn').text('Submit rename requests');
+                } else {
+                    $('#mass-rename-submit-btn').text(`Submit ${changeLength} rename requests`);
                 }
             }
 
@@ -120,6 +132,7 @@ mw.loader.using(['mediawiki.api'], function () {
     }
     
     function deactivateScript() {
+        pendingChanges = {};
         isActive = false;
         $('#ca-mass-rename-request a').text('Request renaming files');
         $('textarea.mass-rename-input').each(function() {
@@ -180,34 +193,37 @@ mw.loader.using(['mediawiki.api'], function () {
         if (savedReason) {
             $reasonInput.val(savedReason);
         }
-        const $replaceRow = $('<div>')
+        const $findRow = $('<div>')
             .css({'margin-bottom': '10px'})
             .appendTo($controls);
         $('<span>')
             .text('Find:')
-            .appendTo($replaceRow);
+            .appendTo($findRow);
         const $findInput = $('<input>')
             .attr('type', 'text')
             .attr('id', 'mass-rename-find')
-            .css({'margin': '0 5px', 'padding': '3px', 'width': '100px'})
+            .css({'margin': '0 5px', 'padding': '3px', 'width': '250px'})
             .on('keydown', function (e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     findAndReplace();
                 }
             })
-            .appendTo($replaceRow);
+            .appendTo($findRow);
         const savedFind = localStorage.getItem('mass-rename-saved-find');
         if (savedFind) {
             $findInput.val(savedFind);
         }
+        const $replaceRow = $('<div>')
+            .css({'margin-bottom': '10px'})
+            .appendTo($controls);
         $('<span>')
             .text('Replace:')
             .appendTo($replaceRow);
         const $replaceInput = $('<input>')
             .attr('type', 'text')
             .attr('id', 'mass-rename-replace')
-            .css({'margin': '0 5px', 'padding': '3px', 'width': '100px'})
+            .css({'margin': '0 5px', 'padding': '3px', 'width': '250px'})
             .on('keydown', function (e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -262,6 +278,20 @@ mw.loader.using(['mediawiki.api'], function () {
             .on('click', submitRequests)
             .appendTo($buttonRow);
         $('<button>')
+            .text('Reset')
+            .css({
+                'padding': '8px 16px',
+                'margin': '0 16px',
+                'background': 'rgb(25, 46, 88)',
+                'color': 'white',
+                'border': 'none',
+                'border-radius': '3px',
+                'cursor': 'pointer',
+                'font-weight': 'bold'
+            })
+            .on('click', resetFileNames)
+            .appendTo($buttonRow);
+        $('<button>')
             .text('Cancel')
             .css({
                 'padding': '8px 16px',
@@ -276,6 +306,14 @@ mw.loader.using(['mediawiki.api'], function () {
             .on('click', deactivateScript)
             .appendTo($buttonRow);
         $('#mw-category-media').prepend($controls);
+    }
+
+    function resetFileNames() {
+        $('textarea.mass-rename-input').each(function() {
+            const $input = $(this);
+            const original = $input.data('original');
+            $input.data('setName')(original);
+        });
     }
 
     function findAndReplace() {
@@ -296,52 +334,40 @@ mw.loader.using(['mediawiki.api'], function () {
     }
     
     function submitRequests() {
-        const rationale = $('#mass-rename-rationale').val().trim();
+        rationale = $('#mass-rename-rationale').val().trim();
         if (!rationale || !/^[1-6]$/.test(rationale)) {
             mw.notify('Please enter a valid rationale (1-6)', {type: 'error'});
             return;
         }
-        const reason = $('#mass-rename-reason').val().trim();
+        reason = $('#mass-rename-reason').val().trim();
         localStorage.setItem('mass-rename-saved-rationale', rationale);
         localStorage.setItem('mass-rename-saved-reason', reason);
-        const changes = [];
-        $('textarea.mass-rename-input').each(function() {
-            const $input = $(this);
-            const original = $input.data('original');
-            const newName = $input.val().trim();
-            if (newName && newName !== original) {
-                changes.push({
-                    original: original,
-                    new: newName,
-                    rationale: rationale,
-                    reason: reason
-                });
-            }
-        });
-        if (changes.length === 0) {
+        const fileNames = Object.keys(pendingChanges);
+        const changeLength = fileNames.length;
+        if (changeLength === 0) {
             mw.notify('No changes to submit', {type: 'warn'});
             return;
         }
-        if (!confirm(`Submit ${changes.length} rename request(s)?`)) {
+        if (!confirm(`Submit ${changeLength} rename request(s)?`)) {
             return;
         }
-        const overwrite = $('#mass-rename-overwrite-template').prop('checked');
+        overwriteTemplate = $('#mass-rename-overwrite-template').prop('checked');
         const submitButton = $('#mass-rename-submit-btn');
         submitButton.prop('disabled', true);
         submitButton.text('Submitted 0 request(s)...');
-        mw.notify(`Submitting ${changes.length} request(s)...`);
+        mw.notify(`Submitting ${changeLength} request(s)...`);
         let completed = 0;
-        changes.forEach((change, i) => {
+        fileNames.forEach((fileName, i) => {
             setTimeout(() => {
-                addRenameTemplate(change.original, change.new, change.rationale, change.reason, overwrite)
+                addRenameTemplate(fileName, pendingChanges[fileName])
                     .catch((err) => {
-                        mw.notify(`Failed: ${change.original} - ${err}`, {type: 'error'});
+                        mw.notify(`Failed: ${fileName} - ${err}`, {type: 'error'});
                     })
                     .finally(() => {
                         completed++;
                         submitButton.text(`Submitted ${completed} request(s)...`);
-                        if (completed === changes.length) {
-                            mw.notify(`All ${changes.length} requests submitted`);
+                        if (completed === changeLength) {
+                            mw.notify(`All ${changeLength} requests submitted`);
                             deactivateScript();
                         }
                     });
@@ -349,7 +375,7 @@ mw.loader.using(['mediawiki.api'], function () {
         });
     }
     
-    function addRenameTemplate(fileName, newName, rationale, reason, overwrite) {
+    function addRenameTemplate(fileName, newName) {
         return new Promise((resolve, reject) => {
             const api = new mw.Api();
             api.get({
@@ -371,7 +397,7 @@ mw.loader.using(['mediawiki.api'], function () {
                 }
                 const content = originalPage.revisions[0]['*'];
                 const templateExists = /\{\{rename/i.test(content);
-                if (templateExists && !overwrite) {
+                if (templateExists && !overwriteTemplate) {
                     reject('Already has rename template');
                     return;
                 }
