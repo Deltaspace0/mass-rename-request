@@ -333,7 +333,7 @@ mw.loader.using(['mediawiki.api'], function () {
         mw.notify(`Replaced ${replacedCount} names`);
     }
     
-    function submitRequests() {
+    function submitRequests(event) {
         rationale = $('#mass-rename-rationale').val().trim();
         if (!rationale || !/^[1-6]$/.test(rationale)) {
             mw.notify('Please enter a valid rationale (1-6)', {type: 'error'});
@@ -348,7 +348,7 @@ mw.loader.using(['mediawiki.api'], function () {
             mw.notify('No changes to submit', {type: 'warn'});
             return;
         }
-        if (!confirm(`Submit ${changeLength} rename request(s)?`)) {
+        if (!event.ctrlKey && !confirm(`Submit ${changeLength} rename request(s)?`)) {
             return;
         }
         overwriteTemplate = $('#mass-rename-overwrite-template').prop('checked');
