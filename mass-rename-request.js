@@ -357,6 +357,7 @@ mw.loader.using(['mediawiki.api'], function () {
         submitButton.text('Submitted 0 request(s)...');
         mw.notify(`Submitting ${changeLength} request(s)...`);
         let completed = 0;
+        document.body.style.cursor = 'wait';
         fileNames.forEach((fileName, i) => {
             setTimeout(() => {
                 addRenameTemplate(fileName, pendingChanges[fileName])
@@ -369,6 +370,7 @@ mw.loader.using(['mediawiki.api'], function () {
                         if (completed === changeLength) {
                             mw.notify(`All ${changeLength} requests submitted`);
                             deactivateScript();
+                            document.body.style.cursor = 'default';
                         }
                     });
             }, i*200);
