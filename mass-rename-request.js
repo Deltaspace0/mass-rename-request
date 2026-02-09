@@ -71,7 +71,7 @@ mw.loader.using(['mediawiki.api'], function () {
             const $resetBtn = $('<button>')
                 .text('X')
                 .prop('disabled', true)
-                .attr('title', 'Reset to original name')
+                .attr('title', 'Reset to: '+fileName)
                 .attr('class', 'mass-rename-reset-btn')
                 .css({
                     'margin-left': '5px',
